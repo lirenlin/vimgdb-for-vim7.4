@@ -36,6 +36,7 @@ nmap <S-F7>  :call <SID>Toggle()<cr>
 function! s:Toggle()
     if s:gdb_k
 	let s:gdb_k = 0
+    call <SID>SaveMap()
 	map <Space> :call gdb("")<CR>
 	nmap <silent> <C-Z> :call gdb("\032")<CR>
 
@@ -74,7 +75,7 @@ function! s:Toggle()
     " Restore vim defaults
     else
 	let s:gdb_k = 1
-	nunmap <Space>
+	unmap <Space>
 	nunmap <C-Z>
 
 	nunmap B
@@ -95,9 +96,11 @@ function! s:Toggle()
 	nunmap <C-B>
 	nunmap <C-E>
 	nunmap <C-P>
+	vunmap <C-P>
 	nunmap <C-X>
 
-	echohl ErrorMsg
+    call <SID>restoreMap()
+    echohl ErrorMsg
 	echo "gdb keys reset to default"
 	echohl None
     endif
@@ -123,4 +126,73 @@ endfunction
 " map vimGdb keys
 "call s:Toggle()
 
+" save original key mapping string
+let s:savedMap = []
+function! s:SaveMap()
+    if len(s:savedMap) != 0
+        let s:savedMap = []
+    endif
+    let mapkeys = {"n":["<Space>", "<C-Z>", "B", "L", "A", "S", "I", "<C-N>",
+                    \"X", "F", "R", "Q", "C", "W", "<C-U>", "<C-D>", "<C-B>",
+                    \"<C-E>", "<C-P>", "<C-X>"],
+                \"v":["<Space>", "<C-P>"],
+                \"o":["<Space>"]}
 
+    for mode in keys(mapkeys)
+        for key in mapkeys[mode]
+            let keyMap = maparg(key, mode)
+            if keyMap != ""
+                let cmd = mode."map ".key." ".keyMap
+                call add(s:savedMap, cmd)
+            endif
+        endfor
+    endfor
+endfunction
+
+" restore original key mapping
+function! s:restoreMap()
+    if len(s:savedMap) != 0
+        for item in s:savedMap
+            execute item
+        endfor
+    endif
+endfunction
+
+
+function! s:DisableMap()
+    if &syntax != 'gdbvim'
+        return
+    endif
+
+    if !s:gdb_k
+        noremap <buffer> <Space> <Space>
+        nnoremap <buffer> <C-Z> <C-Z>
+
+        nnoremap <buffer> B B
+        nnoremap <buffer> L L
+        nnoremap <buffer> A A
+        nnoremap <buffer> S S
+        nnoremap <buffer> I I
+        nnoremap <buffer> <C-N> <C-N>
+        nnoremap <buffer> X X
+        nnoremap <buffer> F F
+        nnoremap <buffer> R R
+        nnoremap <buffer> Q Q
+        nnoremap <buffer> C C
+        nnoremap <buffer> W W
+        nnoremap <buffer> <C-U> <C-U>
+        nnoremap <buffer> <C-D> <C-D>
+
+        nnoremap <buffer> <C-B> <C-B>
+        nnoremap <buffer> <C-E> <C-E>
+        nnoremap <buffer> <C-P> <C-P>
+        vnoremap <buffer> <C-P> <C-P>
+        nnoremap <buffer> <C-X> <C-X>
+
+        echohl ErrorMsg
+        echo "gdb keys reset to default in gdb buffer"
+        echohl None
+    endif
+endfunction
+
+autocmd BufEnter * :call <SID>DisableMap()
