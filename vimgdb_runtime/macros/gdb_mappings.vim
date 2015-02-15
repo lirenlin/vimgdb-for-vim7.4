@@ -163,6 +163,16 @@ function! s:DisableMap()
     if &syntax != 'gdbvim'
         return
     endif
+    " this is just a hack. don't really work nice. need to modify the source code.
+    redir => msg
+    sign list
+    redir END
+    if matchstr (msg, 'gdb_bp') != ''
+        sign define dummy
+        execute 'sign place 9999 line=1 name=dummy buffer='.bufnr('')
+    else
+        execute 'sign unplace 9999 buffer='.bufnr('')
+    endif
 
     if !s:gdb_k
         noremap <buffer> <Space> <Space>
